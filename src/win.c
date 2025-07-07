@@ -443,7 +443,8 @@ static void init_animation(session_t *ps, struct managed_win *w) {
 	enum open_window_animation animation = ps->o.animation_for_open_window;
 
 	w->animation_ignore = c2_match(ps, w, ps->o.animation_blacklist, NULL);
-	w->animation_transient = wid_has_prop(ps, w->client_win, ps->atoms->aWM_TRANSIENT_FOR);
+	w->animation_transient =
+	    wid_has_prop(ps, w->client_win, ps->atoms->aWM_TRANSIENT_FOR);
 
 	if (w->window_type != WINTYPE_TOOLTIP && w->animation_transient)
 		animation = ps->o.animation_for_transient_window;
@@ -465,14 +466,15 @@ static void init_animation(session_t *ps, struct managed_win *w) {
 
 	switch (animation) {
 	case OPEN_WINDOW_ANIMATION_AUTO:
-	case OPEN_WINDOW_ANIMATION_NONE: { // No animation
+	case OPEN_WINDOW_ANIMATION_NONE: {        // No animation
 		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_w = w->pending_g.width;
 		w->animation_h = w->pending_g.height;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_FLYIN: { // Fly-in from a random point outside the screen
+	case OPEN_WINDOW_ANIMATION_FLYIN: {        // Fly-in from a random point outside
+		                                   // the screen
 		// Compute random point off screen
 		double angle = 2 * M_PI * ((double)rand() / RAND_MAX);
 		const double radius =
@@ -485,42 +487,48 @@ static void init_animation(session_t *ps, struct managed_win *w) {
 		w->animation_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_ZOOM: { // Zoom-in the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_ZOOM: {        // Zoom-in the image, without changing
+		                                  // its location
 		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_w = 0;
 		w->animation_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SQUEEZE: { //Squeeze up like old tv turn on, without changing its location
+	case OPEN_WINDOW_ANIMATION_SQUEEZE: {        // Squeeze up like old tv turn on,
+		                                     // without changing its location
 		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_w = w->pending_g.width;
 		w->animation_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_UP: { // Slide up the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_UP: {        // Slide up the image, without
+		                                      // changing its location
 		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_center_y = w->pending_g.y + w->pending_g.height;
 		w->animation_w = w->pending_g.width;
 		w->animation_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_DOWN: { // Slide down the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_DOWN: {        // Slide down the image, without
+		                                        // changing its location
 		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_center_y = w->pending_g.y;
 		w->animation_w = w->pending_g.width;
 		w->animation_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_LEFT: { // Slide left the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_LEFT: {        // Slide left the image, without
+		                                        // changing its location
 		w->animation_center_x = w->pending_g.x + w->pending_g.width;
 		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_w = 0;
 		w->animation_h = w->pending_g.height;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_RIGHT: { // Slide right the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_RIGHT: {        // Slide right the image, without
+		                                         // changing its location
 		w->animation_center_x = w->pending_g.x;
 		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_w = 0;
@@ -528,23 +536,21 @@ static void init_animation(session_t *ps, struct managed_win *w) {
 		break;
 	}
 	case OPEN_WINDOW_ANIMATION_SLIDE_IN: {
-		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5 -
-			ps->root_height *
-				((ps->root_desktop_switch_direction < 0 &&
-				 ps->root_desktop_switch_direction >= -1) ||
-				ps->root_desktop_switch_direction > 1?1:-1);
+		// Horizontal workspace switch: animate from left/right
+		w->animation_center_x =
+		    w->pending_g.x + w->pending_g.width * 0.5 -
+		    ps->root_width * (ps->root_desktop_switch_direction > 0 ? 1 : -1);
+		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_w = w->pending_g.width;
 		w->animation_h = w->pending_g.height;
 		break;
 	}
 	case OPEN_WINDOW_ANIMATION_SLIDE_OUT: {
-		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5 -
-			ps->root_height *
-				((ps->root_desktop_switch_direction < 0 &&
-				 ps->root_desktop_switch_direction >= -1) ||
-				ps->root_desktop_switch_direction > 1?-1:1);
+		// Horizontal workspace switch: animate to left/right
+		w->animation_dest_center_x =
+		    w->pending_g.x + w->pending_g.width * 0.5 -
+		    ps->root_width * (ps->root_desktop_switch_direction > 0 ? -1 : 1);
+		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = w->pending_g.height;
 		break;
@@ -581,7 +587,8 @@ static void init_animation_unmap(session_t *ps, struct managed_win *w) {
 	} else {
 		animation = ps->o.animation_for_unmap_window;
 
-		if (ps->o.wintype_option[w->window_type].animation_unmap < OPEN_WINDOW_ANIMATION_INVALID)
+		if (ps->o.wintype_option[w->window_type].animation_unmap <
+		    OPEN_WINDOW_ANIMATION_INVALID)
 			animation = ps->o.wintype_option[w->window_type].animation_unmap;
 	}
 
@@ -597,14 +604,15 @@ static void init_animation_unmap(session_t *ps, struct managed_win *w) {
 
 	switch (animation) {
 	case OPEN_WINDOW_ANIMATION_AUTO:
-	case OPEN_WINDOW_ANIMATION_NONE: { // No animation
+	case OPEN_WINDOW_ANIMATION_NONE: {        // No animation
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = w->pending_g.height;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_FLYIN: { // Fly-out from a random point outside the screen
+	case OPEN_WINDOW_ANIMATION_FLYIN: {        // Fly-out from a random point outside
+		                                   // the screen
 		// Compute random point off screen
 		double angle = 2 * M_PI * ((double)rand() / RAND_MAX);
 		const double radius =
@@ -617,42 +625,48 @@ static void init_animation_unmap(session_t *ps, struct managed_win *w) {
 		w->animation_dest_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_ZOOM: { // Zoom-out the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_ZOOM: {        // Zoom-out the image, without changing
+		                                  // its location
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = 0;
 		w->animation_dest_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SQUEEZE: { //Squeeze down like old tv turn off, without changing its location
+	case OPEN_WINDOW_ANIMATION_SQUEEZE: {        // Squeeze down like old tv turn off,
+		                                     // without changing its location
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_UP: { // Slide up the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_UP: {        // Slide up the image, without
+		                                      // changing its location
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_dest_center_y = w->pending_g.y;
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_DOWN: { // Slide down the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_DOWN: {        // Slide down the image, without
+		                                        // changing its location
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
 		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height;
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = 0;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_LEFT: { // Slide left the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_LEFT: {        // Slide left the image, without
+		                                        // changing its location
 		w->animation_dest_center_x = w->pending_g.x;
 		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = 0;
 		w->animation_dest_h = w->pending_g.height;
 		break;
 	}
-	case OPEN_WINDOW_ANIMATION_SLIDE_RIGHT: { // Slide right the image, without changing its location
+	case OPEN_WINDOW_ANIMATION_SLIDE_RIGHT: {        // Slide right the image, without
+		                                         // changing its location
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width;
 		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = 0;
@@ -661,22 +675,26 @@ static void init_animation_unmap(session_t *ps, struct managed_win *w) {
 	}
 	case OPEN_WINDOW_ANIMATION_SLIDE_IN: {
 		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-		w->animation_center_y = w->pending_g.y + w->pending_g.height * 0.5 -
-			ps->root_height *
-				((ps->root_desktop_switch_direction < 0 &&
-				 ps->root_desktop_switch_direction >= -1) ||
-				ps->root_desktop_switch_direction > 1?1:-1);
+		w->animation_center_y =
+		    w->pending_g.y + w->pending_g.height * 0.5 -
+		    ps->root_height * ((ps->root_desktop_switch_direction < 0 &&
+		                        ps->root_desktop_switch_direction >= -1) ||
+		                               ps->root_desktop_switch_direction > 1
+		                           ? 1
+		                           : -1);
 		w->animation_w = w->pending_g.width;
 		w->animation_h = w->pending_g.height;
 		break;
 	}
 	case OPEN_WINDOW_ANIMATION_SLIDE_OUT: {
 		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5 -
-			ps->root_height *
-				((ps->root_desktop_switch_direction < 0 &&
-				 ps->root_desktop_switch_direction >= -1) ||
-				ps->root_desktop_switch_direction > 1?-1:1);
+		w->animation_dest_center_y =
+		    w->pending_g.y + w->pending_g.height * 0.5 -
+		    ps->root_height * ((ps->root_desktop_switch_direction < 0 &&
+		                        ps->root_desktop_switch_direction >= -1) ||
+		                               ps->root_desktop_switch_direction > 1
+		                           ? -1
+		                           : 1);
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = w->pending_g.height;
 		break;
@@ -725,14 +743,16 @@ void win_process_update_flags(session_t *ps, struct managed_win *w) {
 			add_damage_from_win(ps, w);
 		}
 
-		// Update window geometry if animations enabled, window isn't set to NOT animate
-		// and picom isn't just starting up or restarting
+		// Update window geometry if animations enabled, window isn't set to NOT
+		// animate and picom isn't just starting up or restarting
 		if (ps->o.animations && ps->o.wintype_option[w->window_type].animation != 0) {
 			if (w->state == WSTATE_MAPPED) {
 				init_animation(ps, w);
 
-				w->animation_center_x = w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-				w->animation_center_y = w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
+				w->animation_center_x = w->animation_dest_center_x =
+				    w->pending_g.x + w->pending_g.width * 0.5;
+				w->animation_center_y = w->animation_dest_center_y =
+				    w->pending_g.y + w->pending_g.height * 0.5;
 				w->animation_w = w->animation_dest_w = w->pending_g.width;
 				w->animation_h = w->animation_dest_h = w->pending_g.height;
 
@@ -743,15 +763,17 @@ void win_process_update_flags(session_t *ps, struct managed_win *w) {
 				// Set window-open animation
 				init_animation(ps, w);
 
-				w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-				w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
+				w->animation_dest_center_x =
+				    w->pending_g.x + w->pending_g.width * 0.5;
+				w->animation_dest_center_y =
+				    w->pending_g.y + w->pending_g.height * 0.5;
 				w->animation_dest_w = w->pending_g.width;
 				w->animation_dest_h = w->pending_g.height;
 
 				w->g.x = (int16_t)round(w->animation_center_x -
-										w->animation_w * 0.5);
+				                        w->animation_w * 0.5);
 				w->g.y = (int16_t)round(w->animation_center_y -
-										w->animation_h * 0.5);
+				                        w->animation_h * 0.5);
 				w->g.width = (uint16_t)round(w->animation_w);
 				w->g.height = (uint16_t)round(w->animation_h);
 
@@ -771,8 +793,8 @@ void win_process_update_flags(session_t *ps, struct managed_win *w) {
 			double w_dist = w->animation_dest_w - w->animation_w;
 			double h_dist = w->animation_dest_h - w->animation_h;
 			w->animation_inv_og_distance =
-				1.0 / sqrt(x_dist * x_dist + y_dist * y_dist +
-							w_dist * w_dist + h_dist * h_dist);
+			    1.0 / sqrt(x_dist * x_dist + y_dist * y_dist +
+			               w_dist * w_dist + h_dist * h_dist);
 
 			if (isinf(w->animation_inv_og_distance))
 				w->animation_inv_og_distance = 0;
@@ -785,15 +807,15 @@ void win_process_update_flags(session_t *ps, struct managed_win *w) {
 			// also sets w->reg_ignore_valid = false; too we check for it
 			if (w->reg_ignore_valid) {
 				if (w->old_win_image) {
-					ps->backend_data->ops->release_image(ps->backend_data,
-														w->old_win_image);
+					ps->backend_data->ops->release_image(
+					    ps->backend_data, w->old_win_image);
 					w->old_win_image = NULL;
 				}
 
 				// We only grab
 				if (w->win_image) {
 					w->old_win_image = ps->backend_data->ops->clone_image(
-						ps->backend_data, w->win_image, &w->bounding_shape);
+					    ps->backend_data, w->win_image, &w->bounding_shape);
 				}
 			}
 
@@ -2370,7 +2392,7 @@ static void unmap_win_finish(session_t *ps, struct managed_win *w) {
 	// Try again at binding images when the window is mapped next time
 	win_clear_flags(w, WIN_FLAGS_IMAGE_ERROR);
 
-	// Flag window so that it gets animated when it reapears 
+	// Flag window so that it gets animated when it reapears
 	// in case it wasn't destroyed
 	win_set_flags(w, WIN_FLAGS_POSITION_STALE);
 	win_set_flags(w, WIN_FLAGS_SIZE_STALE);
@@ -2633,19 +2655,16 @@ void unmap_win_start(session_t *ps, struct managed_win *w) {
 	w->opacity_target_old = fmax(w->opacity_target, w->opacity_target_old);
 	w->opacity_target = win_calc_opacity_target(ps, w);
 
-	if (ps->o.animations &&
-		ps->o.animation_for_unmap_window != OPEN_WINDOW_ANIMATION_NONE &&
-		ps->o.wintype_option[w->window_type].animation != 0) 
-	{
+	if (ps->o.animations && ps->o.animation_for_unmap_window != OPEN_WINDOW_ANIMATION_NONE &&
+	    ps->o.wintype_option[w->window_type].animation != 0) {
 		init_animation_unmap(ps, w);
 
 		double x_dist = w->animation_dest_center_x - w->animation_center_x;
 		double y_dist = w->animation_dest_center_y - w->animation_center_y;
 		double w_dist = w->animation_dest_w - w->animation_w;
 		double h_dist = w->animation_dest_h - w->animation_h;
-		w->animation_inv_og_distance =
-			1.0 / sqrt(x_dist * x_dist + y_dist * y_dist +
-						w_dist * w_dist + h_dist * h_dist);
+		w->animation_inv_og_distance = 1.0 / sqrt(x_dist * x_dist + y_dist * y_dist +
+		                                          w_dist * w_dist + h_dist * h_dist);
 
 		if (isinf(w->animation_inv_og_distance))
 			w->animation_inv_og_distance = 0;
@@ -2653,8 +2672,7 @@ void unmap_win_start(session_t *ps, struct managed_win *w) {
 		w->animation_progress = 0.0;
 
 		if (w->old_win_image) {
-			ps->backend_data->ops->release_image(ps->backend_data,
-												w->old_win_image);
+			ps->backend_data->ops->release_image(ps->backend_data, w->old_win_image);
 			w->old_win_image = NULL;
 		}
 	}
