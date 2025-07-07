@@ -482,7 +482,7 @@ static void init_animation(session_t *ps, struct managed_win *w) {
 
 		// Set animation
 		w->animation_center_x = ps->root_width * 0.5 + radius * cos(angle);
-		w->animation_center_y = ps->root_height * 0.5 + radius * sin(angle);
+		// w->animation_center_y = ps->root_height * 0.5 + radius * sin(angle);
 		w->animation_w = 0;
 		w->animation_h = 0;
 		break;
@@ -674,27 +674,19 @@ static void init_animation_unmap(session_t *ps, struct managed_win *w) {
 		break;
 	}
 	case OPEN_WINDOW_ANIMATION_SLIDE_IN: {
-		w->animation_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-		w->animation_center_y =
-		    w->pending_g.y + w->pending_g.height * 0.5 -
-		    ps->root_height * ((ps->root_desktop_switch_direction < 0 &&
-		                        ps->root_desktop_switch_direction >= -1) ||
-		                               ps->root_desktop_switch_direction > 1
-		                           ? 1
-		                           : -1);
-		w->animation_w = w->pending_g.width;
-		w->animation_h = w->pending_g.height;
+		w->animation_dest_center_x =
+		    w->pending_g.x + w->pending_g.width * 0.5 -
+		    ps->root_width * (ps->root_desktop_switch_direction > 0 ? 1 : -1);
+		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
+		w->animation_dest_w = w->pending_g.width;
+		w->animation_dest_h = w->pending_g.height;
 		break;
 	}
 	case OPEN_WINDOW_ANIMATION_SLIDE_OUT: {
-		w->animation_dest_center_x = w->pending_g.x + w->pending_g.width * 0.5;
-		w->animation_dest_center_y =
-		    w->pending_g.y + w->pending_g.height * 0.5 -
-		    ps->root_height * ((ps->root_desktop_switch_direction < 0 &&
-		                        ps->root_desktop_switch_direction >= -1) ||
-		                               ps->root_desktop_switch_direction > 1
-		                           ? -1
-		                           : 1);
+		w->animation_dest_center_x =
+		    w->pending_g.x + w->pending_g.width * 0.5 -
+		    ps->root_width * (ps->root_desktop_switch_direction > 0 ? -1 : 1);
+		w->animation_dest_center_y = w->pending_g.y + w->pending_g.height * 0.5;
 		w->animation_dest_w = w->pending_g.width;
 		w->animation_dest_h = w->pending_g.height;
 		break;

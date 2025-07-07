@@ -254,7 +254,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 		// reminder: bounding shape contains the WM frame
 		auto reg_bound = win_get_bounding_shape_global_by_val(w);
 		auto reg_bound_no_corner =
-			win_get_bounding_shape_global_without_corners_by_val(w);
+		    win_get_bounding_shape_global_without_corners_by_val(w);
 
 		// The clip region for the current window, in global/target coordinates
 		// reg_paint_in_bound \in reg_paint
@@ -357,7 +357,7 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 			pixman_region32_intersect(&reg_shadow, &reg_shadow, &reg_paint);
 			if (!ps->o.wintype_option[w->window_type].full_shadow) {
 				pixman_region32_subtract(&reg_shadow, &reg_shadow,
-							&reg_bound_no_corner);
+				                         &reg_bound_no_corner);
 			}
 
 			// Mask out the region we don't want shadow on
@@ -470,28 +470,27 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 		bool is_animating = 0 <= w->animation_progress && w->animation_progress < 1.0;
 		if (w->frame_opacity == 1 && !is_animating) {
 			ps->backend_data->ops->compose(ps->backend_data, w->win_image,
-									w->g.x, w->g.y,
-									w->g.x + w->widthb, w->g.y + w->heightb,
-									&reg_paint_in_bound, &reg_visible);
+			                               w->g.x, w->g.y, w->g.x + w->widthb,
+			                               w->g.y + w->heightb,
+			                               &reg_paint_in_bound, &reg_visible);
 		} else {
-			process_window_for_painting(
-				ps, w, w->win_image, 1.0, &reg_bound, &reg_visible,
-				&reg_paint, &reg_paint_in_bound);
+			process_window_for_painting(ps, w, w->win_image, 1.0, &reg_bound,
+			                            &reg_visible, &reg_paint,
+			                            &reg_paint_in_bound);
 
 			if (w->old_win_image) {
-				bool resizing =
-					w->g.width != w->pending_g.width ||
-					w->g.height != w->pending_g.height;
+				bool resizing = w->g.width != w->pending_g.width ||
+				                w->g.height != w->pending_g.height;
 
-				// Only do this if size changes as otherwise moving 
+				// Only do this if size changes as otherwise moving
 				// transparent windows will flicker
 				if (resizing) {
 					assert(w->old_win_image);
 
-					process_window_for_painting(ps, w, w->old_win_image,
-									1.0 - w->animation_progress,
-									&reg_bound, &reg_visible,
-									&reg_paint, &reg_paint_in_bound);
+					process_window_for_painting(
+					    ps, w, w->old_win_image,
+					    1.0 - w->animation_progress, &reg_bound,
+					    &reg_visible, &reg_paint, &reg_paint_in_bound);
 				}
 			}
 		}
