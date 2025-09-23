@@ -455,7 +455,7 @@ static inline void ev_property_notify(session_t *ps, xcb_property_notify_event_t
 							1L, XCB_ATOM_CARDINAL, 32);
 
 			if (prop.nitems) {
-				ps->root_desktop_switch_direction = ((int)*prop.c32) - ps->root_desktop_num;
+				ps->root_desktop_switch_direction = -((int)*prop.c32 - ps->root_desktop_num);
 				ps->root_desktop_num = (int)*prop.c32;
 			}
 		}
