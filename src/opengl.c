@@ -12,9 +12,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <xcb/render.h>
 #include <xcb/xcb.h>
+#include "c2.h"
+#include "win.h"
 
 #include "backend/gl/gl_common.h"
 #include "backend/gl/glx.h"
@@ -25,7 +26,6 @@
 #include "log.h"
 #include "region.h"
 #include "string_utils.h"
-#include "uthash_extra.h"
 #include "utils.h"
 #include "win.h"
 
@@ -903,13 +903,90 @@ void glx_set_clip(session_t *ps, const region_t *reg) {
  *
  * XXX seems to be way to complex for what it does
  */
+/**
+ * Get the blur strength for a window based on blur strength rules.
+ */
+static int get_blur_strength(session_t *ps, struct managed_win *w) {
+	if (!w) {
+		log_warn("get_blur_strength: No window provided, using default strength "
+		         "%d",
+		         ps->o.blur_strength);
+		return ps->o.blur_strength;
+	}
+	if (!ps->o.blur_strength_list) {
+		log_warn("get_blur_strength: No blur strength rules defined, using "
+		         "default strength %d",
+		         ps->o.blur_strength);
+		return ps->o.blur_strength;
+	}
+
+	log_warn("Checking blur strength rules for window %#010x (name: '%s', class: "
+	         "'%s', instance: '%s')",
+	         w->base.id, w->name ? w->name : "NULL",
+	         w->class_instance ? w->class_instance : "NULL",
+	         w->class_general ? w->class_general : "NULL");
+
+	// Check each rule until we find a match
+	int rule_num = 0;
+	const c2_lptr_t *rule = ps->o.blur_strength_list;
+	while (rule) {
+		// Log the rule pattern if possible
+		log_warn("Testing rule %d (addr: %p)", rule_num, (void *)rule);
+
+		// Check if this rule matches the window
+		void *match_data = NULL;
+		bool match = c2_match(ps, w, rule, &match_data);
+		log_warn("Rule %d match result: %s, match_data: %p", rule_num,
+		         match ? "true" : "false", match_data);
+
+		if (match && match_data) {
+			int strength = (int)(intptr_t)match_data;
+			log_warn("MATCH: Window %#010x (class: '%s') matched blur "
+			         "strength rule %d with strength %d",
+			         w->base.id, w->class_general ? w->class_general : "NULL",
+			         rule_num, strength);
+			return strength;
+		}
+
+		// Manually advance to the next rule
+		const c2_lptr_t *next_rule = *(const c2_lptr_t **)rule;
+		rule = next_rule;
+		rule_num++;
+	}
+
+	// Default to the global blur strength if no matching rule is found
+	log_warn("Window %#010x (%s) using default blur strength %d", w->base.id,
+	         w->name ? w->name : "unnamed", ps->o.blur_strength);
+	return ps->o.blur_strength;
+}
+
 bool glx_blur_dst(session_t *ps, int dx, int dy, int width, int height, float z,
-                  GLfloat factor_center, const region_t *reg_tgt, glx_blur_cache_t *pbc) {
+                  GLfloat factor_center, const region_t *reg_tgt, glx_blur_cache_t *pbc,
+                  struct managed_win *w) {
 	assert(ps->psglx->blur_passes[0].prog);
+	// Get the blur strength based on window rules
+	int blur_strength = ps->o.blur_strength;        // Default to global blur strength
+
+	// If we have a window and blur strength rules, check them
+	if (w && ps->o.blur_strength_list) {
+		blur_strength = get_blur_strength(ps, w);
+		log_warn("Blur strength is %d", blur_strength);
+	}
+
 	const bool more_passes = ps->o.blur_kernel_count > 1;
 	const bool have_scissors = glIsEnabled(GL_SCISSOR_TEST);
 	const bool have_stencil = glIsEnabled(GL_STENCIL_TEST);
 	bool ret = false;
+
+	// Apply blur strength
+	if (blur_strength <= 0) {
+		// Skip blur if strength is 0 or negative
+		return true;
+	}
+
+	// Scale the blur passes based on the strength
+	int actual_passes = ps->o.blur_kernel_count * blur_strength / ps->o.blur_strength;
+	actual_passes = max2(1, actual_passes);        // At least 1 pass
 
 	// Calculate copy region size
 	glx_blur_cache_t ibc = {.width = 0, .height = 0};
@@ -1309,7 +1386,6 @@ bool glx_render(session_t *ps, const glx_texture_t *ptex, int x, int y, int dx, 
 		log_error("Missing texture.");
 		return false;
 	}
-
 	const bool has_prog = pprogram && pprogram->prog;
 	bool dual_texture = false;
 

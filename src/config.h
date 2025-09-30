@@ -259,6 +259,8 @@ typedef struct options {
 	struct conv **blur_kerns;
 	/// Number of convolution kernels
 	int blur_kernel_count;
+	/// Window based blur strength
+	c2_lptr_t *blur_strength_list;
 	/// How much to dim an inactive window. 0.0 - 1.0, 0 to disable.
 	double inactive_dim;
 	/// Whether to use fixed inactive dim opacity, instead of deciding
@@ -308,6 +310,7 @@ bool must_use parse_int(const char *, int *);
 struct conv **must_use parse_blur_kern_lst(const char *, bool *hasneg, int *count);
 bool must_use parse_geometry(session_t *, const char *, region_t *);
 bool must_use parse_rule_opacity(c2_lptr_t **, const char *);
+bool must_use parse_rule_blur_strength(c2_lptr_t **, const char *);
 enum blur_method must_use parse_blur_method(const char *src);
 enum open_window_animation must_use parse_open_window_animation(const char *src);
 

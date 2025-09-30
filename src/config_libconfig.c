@@ -227,10 +227,35 @@ void parse_cfg_condlst(const config_t *pcfg, c2_lptr_t **pcondlst, const char *n
 }
 
 /**
+ * Parse a blur strength rule list in configuration file.
+ */
+static inline void
+parse_cfg_condlst_blur_strength(c2_lptr_t **pcondlst, const config_t *pcfg, const char *name) {
+	config_setting_t *setting = config_lookup(pcfg, name);
+	if (setting) {
+		// Parse an array of options
+		if (config_setting_is_array(setting)) {
+			int i = config_setting_length(setting);
+			while (i--)
+				if (!parse_rule_blur_strength(
+				        pcondlst,
+				        config_setting_get_string_elem(setting, i)))
+					exit(1);
+		}
+		// Treat it as a single pattern if it's a string
+		else if (config_setting_type(setting) == CONFIG_TYPE_STRING) {
+			if (!parse_rule_blur_strength(pcondlst,
+			                              config_setting_get_string(setting)))
+				exit(1);
+		}
+	}
+}
+
+/**
  * Parse an opacity rule list in configuration file.
  */
 static inline void
-parse_cfg_condlst_opct(options_t *opt, const config_t *pcfg, const char *name) {
+parse_cfg_condlst_opct(c2_lptr_t **pcondlst, const config_t *pcfg, const char *name) {
 	config_setting_t *setting = config_lookup(pcfg, name);
 	if (setting) {
 		// Parse an array of options
@@ -238,13 +263,13 @@ parse_cfg_condlst_opct(options_t *opt, const config_t *pcfg, const char *name) {
 			int i = config_setting_length(setting);
 			while (i--)
 				if (!parse_rule_opacity(
-				        &opt->opacity_rules,
+				        pcondlst,
 				        config_setting_get_string_elem(setting, i)))
 					exit(1);
 		}
 		// Treat it as a single pattern if it's a string
 		else if (config_setting_type(setting) == CONFIG_TYPE_STRING) {
-			if (!parse_rule_opacity(&opt->opacity_rules,
+			if (!parse_rule_opacity(pcondlst,
 			                        config_setting_get_string(setting)))
 				exit(1);
 		}
@@ -290,7 +315,8 @@ static inline void parse_wintype_config(const config_t *cfg, const char *member_
 			mask->clip_shadow_above = true;
 		}
 		if (config_setting_lookup_string(setting, "animation", &sval)) {
-			enum open_window_animation animation = parse_open_window_animation(sval);
+			enum open_window_animation animation =
+			    parse_open_window_animation(sval);
 			if (animation >= OPEN_WINDOW_ANIMATION_INVALID)
 				animation = OPEN_WINDOW_ANIMATION_NONE;
 
@@ -298,7 +324,8 @@ static inline void parse_wintype_config(const config_t *cfg, const char *member_
 			mask->animation = OPEN_WINDOW_ANIMATION_INVALID;
 		}
 		if (config_setting_lookup_string(setting, "animation-unmap", &sval)) {
-			enum open_window_animation animation = parse_open_window_animation(sval);
+			enum open_window_animation animation =
+			    parse_open_window_animation(sval);
 			if (animation >= OPEN_WINDOW_ANIMATION_INVALID)
 				animation = OPEN_WINDOW_ANIMATION_NONE;
 
@@ -306,7 +333,8 @@ static inline void parse_wintype_config(const config_t *cfg, const char *member_
 			mask->animation_unmap = OPEN_WINDOW_ANIMATION_INVALID;
 		}
 		if (config_setting_lookup_string(setting, "animation-workspace-in", &sval)) {
-			enum open_window_animation animation = parse_open_window_animation(sval);
+			enum open_window_animation animation =
+			    parse_open_window_animation(sval);
 			if (animation >= OPEN_WINDOW_ANIMATION_INVALID)
 				animation = OPEN_WINDOW_ANIMATION_NONE;
 
@@ -314,7 +342,8 @@ static inline void parse_wintype_config(const config_t *cfg, const char *member_
 			mask->animation_workspace_in = OPEN_WINDOW_ANIMATION_INVALID;
 		}
 		if (config_setting_lookup_string(setting, "animation-workspace-out", &sval)) {
-			enum open_window_animation animation = parse_open_window_animation(sval);
+			enum open_window_animation animation =
+			    parse_open_window_animation(sval);
 			if (animation >= OPEN_WINDOW_ANIMATION_INVALID)
 				animation = OPEN_WINDOW_ANIMATION_NONE;
 
@@ -392,10 +421,9 @@ char *parse_config_libconfig(options_t *opt, const char *config_file, bool *shad
 	}
 	config_set_auto_convert(&cfg, 1);
 
-	// Get options from the configuration file. We don't do range checking
-	// right now. It will be done later
+	log_warn("Configuration file has been read successfully: %s", path);
 
-	// --dbus
+	// Get options from the configuration file. We don't do range checking
 	lcfg_lookup_bool(&cfg, "dbus", &opt->dbus);
 
 	// -D (fade_delta)
@@ -621,8 +649,10 @@ char *parse_config_libconfig(options_t *opt, const char *config_file, bool *shad
 	parse_cfg_condlst(&cfg, &opt->invert_color_list, "invert-color-include");
 	// --blur-background-exclude
 	parse_cfg_condlst(&cfg, &opt->blur_background_blacklist, "blur-background-exclude");
+	// --blur-background-strength
+	parse_cfg_condlst_blur_strength(&opt->blur_strength_list, &cfg, "blur-background-strength");
 	// --opacity-rule
-	parse_cfg_condlst_opct(opt, &cfg, "opacity-rule");
+	parse_cfg_condlst_opct(&opt->opacity_rules, &cfg, "opacity-rule");
 	// --unredir-if-possible-exclude
 	parse_cfg_condlst(&cfg, &opt->unredir_if_possible_blacklist,
 	                  "unredir-if-possible-exclude");

@@ -411,7 +411,77 @@ parse_geometry_end:
 /**
  * Parse a list of opacity rules.
  */
-bool parse_rule_opacity(c2_lptr_t **res, const char *src) {
+/**
+ * Log blur strength rules for debugging
+ */
+static void log_blur_strength_rules(const c2_lptr_t *rules) {
+	if (!rules) {
+		log_warn("No blur strength rules defined");
+		return;
+	}
+
+	log_warn("Blur strength rules loaded (first rule at %p)", (void *)rules);
+	// We can't directly access the pattern strings here due to the opaque c2_lptr_t type
+	// The rules will be logged when they're matched in get_blur_strength
+}
+
+/**
+ * Parse a blur strength rule in the format "STRENGTH:PATTERN"
+ */
+bool parse_rule_blur_strength(c2_lptr_t **res, const char *src) {
+	// Make a copy of the source for logging
+	char *src_copy = strdup(src);
+	if (!src_copy) {
+		log_error("Failed to allocate memory for rule copy");
+		return false;
+	}
+
+	// Find strength value
+	char *endptr = NULL;
+	long val = strtol(src, &endptr, 0);
+	if (!endptr || endptr == src) {
+		log_error("No blur strength specified: %s", src);
+		free(src_copy);
+		return false;
+	}
+	if (val < 0) {
+		log_error("Blur strength %ld invalid (must be >= 0): %s", val, src);
+		free(src_copy);
+		return false;
+	}
+
+	// Skip over spaces
+	while (*endptr && isspace((unsigned char)*endptr))
+		++endptr;
+	if (':' != *endptr) {
+		log_error("Blur strength terminator not found: %s", src);
+		free(src_copy);
+		return false;
+	}
+	++endptr;
+
+	// Log the pattern we're about to parse
+	log_warn("Parsing blur strength rule: %s (strength: %ld, pattern: '%s')", 
+	        src_copy, val, endptr);
+
+	// Parse pattern
+	bool result = c2_parse(res, endptr, (void *)(intptr_t)val);
+	
+	if (result) {
+		log_warn("Successfully parsed blur strength rule: %s -> %ld", endptr, val);
+		log_blur_strength_rules(*res);
+	} else {
+		log_error("Failed to parse blur strength rule: %s", src_copy);
+	}
+	
+	free(src_copy);
+	return result;
+}
+
+/**
+ * Parse an opacity rule in the format "OPACITY:PATTERN"
+ */
+bool must_use parse_rule_opacity(c2_lptr_t **res, const char *src) {
 	// Find opacity value
 	char *endptr = NULL;
 	long val = strtol(src, &endptr, 0);

@@ -13,14 +13,12 @@
 
 #include "common.h"
 #include "compiler.h"
-#include "log.h"
 #include "region.h"
 #include "render.h"
 #include "win.h"
 
 #include <GL/gl.h>
 #include <GL/glx.h>
-#include <ctype.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
@@ -130,7 +128,8 @@ static inline bool glx_tex_binded(const glx_texture_t *ptex, xcb_pixmap_t pixmap
 void glx_set_clip(session_t *ps, const region_t *reg);
 
 bool glx_blur_dst(session_t *ps, int dx, int dy, int width, int height, float z,
-                  GLfloat factor_center, const region_t *reg_tgt, glx_blur_cache_t *pbc);
+                  GLfloat factor_center, const region_t *reg_tgt, glx_blur_cache_t *pbc,
+                  struct managed_win *w);
 
 bool glx_round_corners_dst(session_t *ps, struct managed_win *w,
                            const glx_texture_t *ptex, int dx, int dy, int width,

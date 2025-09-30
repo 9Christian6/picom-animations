@@ -954,7 +954,7 @@ win_blur_background(session_t *ps, struct managed_win *w, xcb_render_picture_t t
 	case BKEND_GLX:
 		// TODO(compton) Handle frame opacity
 		glx_blur_dst(ps, x, y, wid, hei, (float)ps->psglx->z - 0.5f,
-		             (float)factor_center, reg_paint, &w->glx_blur_cache);
+		             (float)factor_center, reg_paint, &w->glx_blur_cache, w);
 		break;
 #endif
 	default: assert(0);
