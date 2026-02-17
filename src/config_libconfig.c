@@ -9,6 +9,7 @@
 #include <libconfig.h>
 #include <libgen.h>
 
+#include "c2.h"
 #include "common.h"
 #include "compiler.h"
 #include "config.h"
@@ -653,6 +654,7 @@ char *parse_config_libconfig(options_t *opt, const char *config_file, bool *shad
 	parse_cfg_condlst_blur_strength(&opt->blur_strength_list, &cfg, "blur-background-strength");
 	// --opacity-rule
 	parse_cfg_condlst_opct(&opt->opacity_rules, &cfg, "opacity-rule");
+
 	// --unredir-if-possible-exclude
 	parse_cfg_condlst(&cfg, &opt->unredir_if_possible_blacklist,
 	                  "unredir-if-possible-exclude");
@@ -787,6 +789,11 @@ char *parse_config_libconfig(options_t *opt, const char *config_file, bool *shad
 	parse_wintype_config(&cfg, "notify", &opt->wintype_option[WINTYPE_NOTIFICATION],
 	                     &winopt_mask[WINTYPE_NOTIFICATION]);
 
+	config_write_file(&cfg, "/home/christian/Opt/picom-animations/configDump");
+	log_warn("Dumping blur");
+	c2_dumpList(opt->blur_strength_list);
+	//log_warn("Dumping opacity");
+	//c2_dumpList(opt->opacity_rules);
 	config_destroy(&cfg);
 	return path;
 

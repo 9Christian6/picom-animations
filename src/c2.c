@@ -1186,6 +1186,14 @@ static const char *c2h_dump_str_type(const c2_l_t *pleaf) {
 	return NULL;
 }
 
+void c2_dumpList(c2_lptr_t *p) {
+	if (p == NULL){
+		log_warn("parsed config was null");
+		return;
+	}
+	c2_dump(p->ptr);
+}
+
 /**
  * Dump a condition tree.
  */

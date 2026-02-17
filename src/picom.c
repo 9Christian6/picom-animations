@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <libconfig.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -1966,7 +1967,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	// Parse all of the rest command line options
 	if (!get_cfg(&ps->o, argc, argv, shadow_enabled, fading_enable, hasneg, winopt_mask)) {
 		log_fatal("Failed to get configuration, usually mean you have specified "
-		          "invalid options.");
+				"invalid options.");
 		return NULL;
 	}
 
@@ -1982,13 +1983,13 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 			stderr_logger = NULL;
 		} else {
 			log_error("Failed to setup log file %s, I will keep using stderr",
-			          ps->o.logpath);
+					ps->o.logpath);
 		}
 	}
 
 	if (strstr(argv[0], "compton")) {
 		log_warn("This compositor has been renamed to \"picom\", the \"compton\" "
-		         "binary will not be installed in the future.");
+				"binary will not be installed in the future.");
 	}
 
 	ps->atoms = init_atoms(ps->c);
@@ -2013,20 +2014,19 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 
 	// Get needed atoms for c2 condition lists
 	if (!(c2_list_postprocess(ps, ps->o.unredir_if_possible_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.paint_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.shadow_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.shadow_clip_list) &&
-	      c2_list_postprocess(ps, ps->o.fade_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.blur_background_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.invert_color_list) &&
-	      c2_list_postprocess(ps, ps->o.opacity_rules) &&
-	      c2_list_postprocess(ps, ps->o.animation_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.rounded_corners_blacklist) &&
-	      c2_list_postprocess(ps, ps->o.focus_blacklist))) {
+				c2_list_postprocess(ps, ps->o.paint_blacklist) &&
+				c2_list_postprocess(ps, ps->o.shadow_blacklist) &&
+				c2_list_postprocess(ps, ps->o.shadow_clip_list) &&
+				c2_list_postprocess(ps, ps->o.fade_blacklist) &&
+				c2_list_postprocess(ps, ps->o.blur_background_blacklist) &&
+				c2_list_postprocess(ps, ps->o.invert_color_list) &&
+				c2_list_postprocess(ps, ps->o.opacity_rules) &&
+				c2_list_postprocess(ps, ps->o.animation_blacklist) &&
+				c2_list_postprocess(ps, ps->o.rounded_corners_blacklist) &&
+				c2_list_postprocess(ps, ps->o.focus_blacklist))) {
 		log_error("Post-processing of conditionals failed, some of your rules "
-		          "might not work");
+				"might not work");
 	}
-
 	ps->gaussian_map = gaussian_kernel_autodetect_deviation(ps->o.shadow_radius);
 	sum_kernel_preprocess(ps->gaussian_map);
 
@@ -2050,10 +2050,10 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	ext_info = xcb_get_extension_data(ps->c, &xcb_present_id);
 	if (ext_info && ext_info->present) {
 		auto r = xcb_present_query_version_reply(
-		    ps->c,
-		    xcb_present_query_version(ps->c, XCB_PRESENT_MAJOR_VERSION,
-		                              XCB_PRESENT_MINOR_VERSION),
-		    NULL);
+				ps->c,
+				xcb_present_query_version(ps->c, XCB_PRESENT_MAJOR_VERSION,
+					XCB_PRESENT_MINOR_VERSION),
+				NULL);
 		if (r) {
 			ps->present_exists = true;
 			free(r);
@@ -2067,11 +2067,11 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 		ps->xsync_event = ext_info->first_event;
 		// Need X Sync 3.1 for fences
 		auto r = xcb_sync_initialize_reply(
-		    ps->c,
-		    xcb_sync_initialize(ps->c, XCB_SYNC_MAJOR_VERSION, XCB_SYNC_MINOR_VERSION),
-		    NULL);
+				ps->c,
+				xcb_sync_initialize(ps->c, XCB_SYNC_MAJOR_VERSION, XCB_SYNC_MINOR_VERSION),
+				NULL);
 		if (r && (r->major_version > 3 ||
-		          (r->major_version == 3 && r->minor_version >= 1))) {
+					(r->major_version == 3 && r->minor_version >= 1))) {
 			ps->xsync_exists = true;
 			free(r);
 		}
@@ -2081,12 +2081,12 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	if (ps->xsync_exists) {
 		ps->sync_fence = x_new_id(ps->c);
 		e = xcb_request_check(
-		    ps->c, xcb_sync_create_fence(ps->c, ps->root, ps->sync_fence, 0));
+				ps->c, xcb_sync_create_fence(ps->c, ps->root, ps->sync_fence, 0));
 		if (e) {
 			if (ps->o.xrender_sync_fence) {
 				log_error_x_error(e, "Failed to create a XSync fence. "
-				                     "xrender-sync-fence will be "
-				                     "disabled");
+						"xrender-sync-fence will be "
+						"disabled");
 				ps->o.xrender_sync_fence = false;
 			}
 			ps->sync_fence = XCB_NONE;
@@ -2094,7 +2094,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 		}
 	} else if (ps->o.xrender_sync_fence) {
 		log_error("XSync extension not found. No XSync fence sync is "
-		          "possible. (xrender-sync-fence can't be enabled)");
+				"possible. (xrender-sync-fence can't be enabled)");
 		ps->o.xrender_sync_fence = false;
 	}
 
@@ -2102,7 +2102,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	if (ps->o.xinerama_shadow_crop) {
 		if (!ps->randr_exists) {
 			log_fatal("No XRandR extension. xinerama-shadow-crop cannot be "
-			          "enabled.");
+					"enabled.");
 			goto err;
 		}
 	}
@@ -2114,7 +2114,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	}
 
 	auto prop = x_get_prop(ps->c, ps->root, ps->atoms->a_NET_CURRENT_DESKTOP, 1L,
-	                       XCB_ATOM_CARDINAL, 32);
+			XCB_ATOM_CARDINAL, 32);
 
 	if (prop.nitems) {
 		ps->root_desktop_num = (int)*prop.c32;
@@ -2206,7 +2206,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	if (ps->o.experimental_backends) {
 		if (ps->o.monitor_repaint && !backend_list[ps->o.backend]->fill) {
 			log_warn("--monitor-repaint is not supported by the backend, "
-			         "disabling");
+					"disabling");
 			ps->o.monitor_repaint = false;
 		}
 	}
@@ -2221,14 +2221,14 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 
 	{
 		xcb_render_create_picture_value_list_t pa = {
-		    .subwindowmode = IncludeInferiors,
+			.subwindowmode = IncludeInferiors,
 		};
 
 		ps->root_picture = x_create_picture_with_visual_and_pixmap(
-		    ps->c, ps->vis, ps->root, XCB_RENDER_CP_SUBWINDOW_MODE, &pa);
+				ps->c, ps->vis, ps->root, XCB_RENDER_CP_SUBWINDOW_MODE, &pa);
 		if (ps->overlay != XCB_NONE) {
 			ps->tgt_picture = x_create_picture_with_visual_and_pixmap(
-			    ps->c, ps->vis, ps->overlay, XCB_RENDER_CP_SUBWINDOW_MODE, &pa);
+					ps->c, ps->vis, ps->overlay, XCB_RENDER_CP_SUBWINDOW_MODE, &pa);
 		} else
 			ps->tgt_picture = ps->root_picture;
 	}
@@ -2297,7 +2297,7 @@ static session_t *session_init(int argc, char **argv, Display *dpy,
 	x_discard_events(ps->c);
 
 	xcb_query_tree_reply_t *query_tree_reply =
-	    xcb_query_tree_reply(ps->c, xcb_query_tree(ps->c, ps->root), NULL);
+		xcb_query_tree_reply(ps->c, xcb_query_tree(ps->c, ps->root), NULL);
 
 	e = xcb_request_check(ps->c, xcb_ungrab_server(ps->c));
 	if (e) {
@@ -2363,7 +2363,7 @@ static void session_destroy(session_t *ps) {
 
 	// Stop listening to events on root window
 	xcb_change_window_attributes(ps->c, ps->root, XCB_CW_EVENT_MASK,
-	                             (const uint32_t[]){0});
+			(const uint32_t[]){0});
 
 #ifdef CONFIG_DBUS
 	// Kill DBus connection

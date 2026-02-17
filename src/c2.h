@@ -24,3 +24,5 @@ c2_lptr_t *c2_free_lptr(c2_lptr_t *lp);
 bool c2_match(session_t *ps, const struct managed_win *w, const c2_lptr_t *condlst, void **pdata);
 
 bool c2_list_postprocess(session_t *ps, c2_lptr_t *list);
+
+void c2_dumpList(c2_lptr_t *p);

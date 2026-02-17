@@ -416,11 +416,11 @@ parse_geometry_end:
  */
 static void log_blur_strength_rules(const c2_lptr_t *rules) {
 	if (!rules) {
-		log_warn("No blur strength rules defined");
+		//log_warn("No blur strength rules defined");
 		return;
 	}
 
-	log_warn("Blur strength rules loaded (first rule at %p)", (void *)rules);
+	//log_warn("Blur strength rules loaded (first rule at %p)", (void *)rules);
 	// We can't directly access the pattern strings here due to the opaque c2_lptr_t type
 	// The rules will be logged when they're matched in get_blur_strength
 }
