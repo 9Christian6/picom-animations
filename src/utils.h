@@ -193,6 +193,33 @@ static inline struct color hex_to_rgb(const char *hex) {
 	return rgb;
 }
 
+/**
+ * Parse "#RRGGBB" into normalized RGB values.
+ */
+static inline bool parse_hex_color(const char *hex, struct color *rgb) {
+	if (hex == NULL || rgb == NULL || hex[0] != '#' || strlen(hex) != 7) {
+		return false;
+	}
+
+	for (int i = 1; i < 7; i++) {
+		if (!isxdigit((unsigned char)hex[i])) {
+			return false;
+		}
+	}
+
+	char *endptr = NULL;
+	long hex_color = strtol(hex + 1, &endptr, 16);
+	if (endptr == NULL || *endptr != '\0') {
+		return false;
+	}
+
+	rgb->red = (double)((hex_color >> 16) & 0xff) / 255.0;
+	rgb->green = (double)((hex_color >> 8) & 0xff) / 255.0;
+	rgb->blue = (double)(hex_color & 0xff) / 255.0;
+	rgb->alpha = 1.0;
+	return true;
+}
+
 attr_noret void
 report_allocation_failure(const char *func, const char *file, unsigned int line);
 

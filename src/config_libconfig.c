@@ -494,6 +494,21 @@ char *parse_config_libconfig(options_t *opt, const char *config_file, bool *shad
 		opt->shadow_green = rgb.green;
 		opt->shadow_blue = rgb.blue;
 	}
+	// --opacity-exclude-color
+	if (config_lookup_string(&cfg, "opacity-exclude-color", &sval)) {
+		struct color rgb;
+		if (!parse_hex_color(sval, &rgb)) {
+			log_fatal("Invalid opacity-exclude-color value '%s', expected #RRGGBB",
+			          sval);
+			goto err;
+		}
+		opt->opacity_exclude_color = rgb;
+		opt->opacity_exclude_color_enabled = true;
+	}
+	// --opacity-exclude-margin
+	if (config_lookup_float(&cfg, "opacity-exclude-margin", &dval)) {
+		opt->opacity_exclude_margin = normalize_d(dval);
+	}
 	// --shadow-exclude-reg
 	if (config_lookup_string(&cfg, "shadow-exclude-reg", &sval))
 		opt->shadow_exclude_reg_str = strdup(sval);

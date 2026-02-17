@@ -270,6 +270,12 @@ typedef struct options {
 	c2_lptr_t *invert_color_list;
 	/// Rules to change window opacity.
 	c2_lptr_t *opacity_rules;
+	/// Exact RGB color that should not be affected by custom opacity rules.
+	struct color opacity_exclude_color;
+	/// Whether opacity_exclude_color is enabled.
+	bool opacity_exclude_color_enabled;
+	/// Per-channel matching tolerance for opacity_exclude_color, 0.0 - 1.0.
+	double opacity_exclude_margin;
 	/// Limit window brightness
 	double max_brightness;
 	// Radius of rounded window corners

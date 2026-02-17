@@ -401,6 +401,19 @@ static void _gl_compose(backend_t *base, struct backend_image *img, GLuint targe
 		}
 		glUniform1f(gd->win_shader.uniform_border_width, (float)border_width);
 	}
+	if (gd->win_shader.uniform_opacity_exclude_color_enabled >= 0) {
+		glUniform1i(gd->win_shader.uniform_opacity_exclude_color_enabled,
+		            gd->opacity_exclude_color_enabled);
+	}
+	if (gd->win_shader.uniform_opacity_exclude_color >= 0) {
+		glUniform3f(gd->win_shader.uniform_opacity_exclude_color,
+		            gd->opacity_exclude_color[0], gd->opacity_exclude_color[1],
+		            gd->opacity_exclude_color[2]);
+	}
+	if (gd->win_shader.uniform_opacity_exclude_margin >= 0) {
+		glUniform1i(gd->win_shader.uniform_opacity_exclude_margin,
+		            gd->opacity_exclude_margin);
+	}
 
 	// log_trace("Draw: %d, %d, %d, %d -> %d, %d (%d, %d) z %d\n",
 	//          x, y, width, height, dx, dy, ptex->width, ptex->height, z);
@@ -908,6 +921,9 @@ static int gl_win_shader_from_string(const char *vshader_str, const char *fshade
 	bind_uniform(ret, max_brightness);
 	bind_uniform(ret, corner_radius);
 	bind_uniform(ret, border_width);
+	bind_uniform(ret, opacity_exclude_color_enabled);
+	bind_uniform(ret, opacity_exclude_color);
+	bind_uniform(ret, opacity_exclude_margin);
 
 	gl_check_err();
 
@@ -1543,6 +1559,9 @@ const char *win_shader_glsl = GLSL(330,
 	uniform float corner_radius;
 	uniform float border_width;
 	uniform bool invert_color;
+	uniform bool opacity_exclude_color_enabled;
+	uniform vec3 opacity_exclude_color;
+	uniform int opacity_exclude_margin;
 	in vec2 texcoord;
 	uniform sampler2D tex;
 	uniform sampler2D brightness;
@@ -1554,6 +1573,12 @@ const char *win_shader_glsl = GLSL(330,
 		return length(max(d, 0.0));
 	}
 
+	bool is_pure_white(vec4 premul_color) {
+		vec3 rgb = premul_color.a > 0.0 ? premul_color.rgb / premul_color.a : premul_color.rgb;
+		ivec3 pixel_rgb8 = ivec3(round(clamp(rgb, 0.0, 1.0) * 255.0));
+		return all(equal(pixel_rgb8, ivec3(255)));
+	}
+
 	void main() {
 		vec4 c = texelFetch(tex, ivec2(texcoord), 0);
 		vec4 border_color = texture(tex, vec2(0.0, 0.5));
@@ -1561,8 +1586,10 @@ const char *win_shader_glsl = GLSL(330,
 			c = vec4(c.aaa - c.rgb, c.a);
 			border_color = vec4(border_color.aaa - border_color.rgb, border_color.a);
 		}
-		c = vec4(c.rgb * (1.0 - dim), c.a) * opacity;
-		border_color = vec4(border_color.rgb * (1.0 - dim), border_color.a) * opacity;
+		float c_opacity = is_pure_white(c) ? opacity : 1.0;
+		float border_opacity = is_pure_white(border_color) ? opacity : 1.0;
+		c = vec4(c.rgb * (1.0 - dim), c.a) * c_opacity;
+		border_color = vec4(border_color.rgb * (1.0 - dim), border_color.a) * border_opacity;
 
 		vec3 rgb_brightness = texelFetch(brightness, ivec2(0, 0), 0).rgb;
 		// Ref: https://en.wikipedia.org/wiki/Relative_luminance
@@ -1690,6 +1717,13 @@ bool gl_init(struct gl_data *gd, session_t *ps) {
 	glUniform1i(glGetUniformLocationChecked(gd->brightness_shader.prog, "tex"), 0);
 	glUniformMatrix4fv(pml, 1, false, projection_matrix[0]);
 	glUseProgram(0);
+
+	gd->opacity_exclude_color_enabled = ps->o.opacity_exclude_color_enabled;
+	gd->opacity_exclude_color[0] = (float)ps->o.opacity_exclude_color.red;
+	gd->opacity_exclude_color[1] = (float)ps->o.opacity_exclude_color.green;
+	gd->opacity_exclude_color[2] = (float)ps->o.opacity_exclude_color.blue;
+	gd->opacity_exclude_margin =
+	    (int)round(clamp(ps->o.opacity_exclude_margin, 0.0, 1.0) * 255.0);
 
 	// Set up the size of the back texture
 	gl_resize(gd, ps->root_width, ps->root_height);

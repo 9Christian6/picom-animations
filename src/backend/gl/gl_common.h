@@ -37,6 +37,9 @@ typedef struct {
 	GLint uniform_max_brightness;
 	GLint uniform_corner_radius;
 	GLint uniform_border_width;
+	GLint uniform_opacity_exclude_color_enabled;
+	GLint uniform_opacity_exclude_color;
+	GLint uniform_opacity_exclude_margin;
 } gl_win_shader_t;
 
 // Program and uniforms for brightness shader
@@ -84,6 +87,9 @@ struct gl_data {
 	gl_fill_shader_t fill_shader;
 	GLuint back_texture, back_fbo;
 	GLuint present_prog;
+	bool opacity_exclude_color_enabled;
+	float opacity_exclude_color[3];
+	int opacity_exclude_margin;
 
 	/// Called when an gl_texture is decoupled from the texture it refers. Returns
 	/// the decoupled user_data

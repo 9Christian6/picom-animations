@@ -181,6 +181,12 @@ static void usage(const char *argv0, int ret) {
 	    "--active-opacity opacity\n"
 	    "  Default opacity for active windows. (0.0 - 1.0)\n"
 	    "\n"
+	    "--opacity-exclude-color color\n"
+	    "  Exclude an exact #RRGGBB color from custom opacity-rule opacity.\n"
+	    "\n"
+	    "--opacity-exclude-margin value\n"
+	    "  Per-channel match tolerance for opacity-exclude-color. (0.0 - 1.0)\n"
+	    "\n"
 	    "--corner-radius value\n"
 	    "  Sets the radius of rounded window corners. When > 0, the compositor\n"
 	    "  will round the corners of windows. (defaults to 0).\n"
@@ -506,6 +512,8 @@ static const struct option longopts[] = {
     {"corner-radius", required_argument, NULL, 333},
     {"rounded-corners-exclude", required_argument, NULL, 334},
     {"clip-shadow-above", required_argument, NULL, 335},
+    {"opacity-exclude-color", required_argument, NULL, 336},
+    {"opacity-exclude-margin", required_argument, NULL, 337},
     {"experimental-backends", no_argument, NULL, 733},
     {"monitor-repaint", no_argument, NULL, 800},
     {"diagnostics", no_argument, NULL, 801},
@@ -920,6 +928,23 @@ bool get_cfg(options_t *opt, int argc, char *const *argv, bool shadow_enable,
 			// --clip-shadow-above
 			condlst_add(&opt->shadow_clip_list, optarg);
 			break;
+		case 336: {
+			// --opacity-exclude-color
+			struct color opacity_exclude_rgb;
+			if (!parse_hex_color(optarg, &opacity_exclude_rgb)) {
+				log_error("Invalid --opacity-exclude-color value '%s', expected #RRGGBB",
+				          optarg);
+				failed = true;
+				break;
+			}
+			opt->opacity_exclude_color = opacity_exclude_rgb;
+			opt->opacity_exclude_color_enabled = true;
+			break;
+		}
+		case 337:
+			// --opacity-exclude-margin
+			opt->opacity_exclude_margin = normalize_d(atof(optarg));
+			break;
 		P_CASEBOOL(733, experimental_backends);
 		P_CASEBOOL(800, monitor_repaint);
 		case 801: opt->print_diagnostics = true; break;
@@ -1018,6 +1043,7 @@ bool get_cfg(options_t *opt, int argc, char *const *argv, bool shadow_enable,
 	opt->inactive_dim = normalize_d(opt->inactive_dim);
 	opt->frame_opacity = normalize_d(opt->frame_opacity);
 	opt->shadow_opacity = normalize_d(opt->shadow_opacity);
+	opt->opacity_exclude_margin = normalize_d(opt->opacity_exclude_margin);
 
 	opt->max_brightness = normalize_d(opt->max_brightness);
 	if (opt->max_brightness < 1.0) {
@@ -1032,6 +1058,15 @@ bool get_cfg(options_t *opt, int argc, char *const *argv, bool shadow_enable,
 			         "backend. Falling back to 1.0");
 			opt->max_brightness = 1.0;
 		}
+	}
+
+	if ((opt->opacity_exclude_color_enabled || opt->opacity_exclude_margin > 0.0) &&
+	    (!opt->experimental_backends || opt->backend != BKEND_GLX)) {
+		log_warn("--opacity-exclude-color/--opacity-exclude-margin requires the "
+		         "experimental glx "
+		         "backend. Falling back to disabled");
+		opt->opacity_exclude_color_enabled = false;
+		opt->opacity_exclude_margin = 0.0;
 	}
 
 	// --blur-background-frame implies --blur-background
