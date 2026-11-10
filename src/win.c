@@ -2631,6 +2631,11 @@ bool destroy_win_start(session_t *ps, struct win *w) {
 		mw->state = WSTATE_DESTROYING;
 		mw->a.map_state = XCB_MAP_STATE_UNMAPPED;
 		mw->in_openclose = true;
+		// A destroyed window cannot return after a workspace transition. In
+		// particular, an unmapped tab-drag preview may still have an opaque
+		// target from that transition; retaining it paints a permanent ghost.
+		mw->opacity_target = 0;
+		add_damage_from_win(ps, mw);
 	}
 
 	// don't need win_ev_stop because the window is gone anyway
