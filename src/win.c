@@ -439,6 +439,34 @@ static void win_update_properties(session_t *ps, struct managed_win *w) {
 	win_clear_all_properties_stale(w);
 }
 
+/// Stop a geometry animation and present the client's current native bounds.
+static void win_snap_animation(session_t *ps, struct managed_win *w) {
+	add_damage_from_win(ps, w);
+	bool resized = w->g.width != w->pending_g.width ||
+	               w->g.height != w->pending_g.height ||
+	               w->g.border_width != w->pending_g.border_width;
+	w->g = w->pending_g;
+	w->animation_center_x = w->animation_dest_center_x =
+	    w->g.x + w->g.width * 0.5;
+	w->animation_center_y = w->animation_dest_center_y =
+	    w->g.y + w->g.height * 0.5;
+	w->animation_w = w->animation_dest_w = w->g.width;
+	w->animation_h = w->animation_dest_h = w->g.height;
+	w->animation_velocity_x = w->animation_velocity_y = 0;
+	w->animation_velocity_w = w->animation_velocity_h = 0;
+	w->animation_progress = 1;
+	w->animation_inv_og_distance = 0;
+	if (ps->backend_data) {
+		win_release_oldpixmap(ps->backend_data, w);
+	}
+	if (resized) {
+		win_on_win_size_change(ps, w);
+		win_update_bounding_shape(ps, w);
+	}
+	w->reg_ignore_valid = false;
+	add_damage_from_win(ps, w);
+}
+
 static void init_animation(session_t *ps, struct managed_win *w) {
 	enum open_window_animation animation = ps->o.animation_for_open_window;
 
@@ -737,7 +765,9 @@ void win_process_update_flags(session_t *ps, struct managed_win *w) {
 
 		// Update window geometry if animations enabled, window isn't set to NOT
 		// animate and picom isn't just starting up or restarting
-		if (ps->o.animations && ps->o.wintype_option[w->window_type].animation != 0) {
+		w->animation_ignore = c2_match(ps, w, ps->o.animation_blacklist, NULL);
+		if (ps->o.animations && !w->animation_ignore &&
+		    ps->o.wintype_option[w->window_type].animation != 0) {
 			if (w->state == WSTATE_MAPPED) {
 				init_animation(ps, w);
 
@@ -814,7 +844,7 @@ void win_process_update_flags(session_t *ps, struct managed_win *w) {
 			w->animation_progress = 0.0;
 
 		} else {
-			w->g = w->pending_g;
+			win_snap_animation(ps, w);
 		}
 
 		if (win_check_flags_all(w, WIN_FLAGS_SIZE_STALE)) {
@@ -1121,7 +1151,8 @@ double win_calc_opacity_target(session_t *ps, const struct managed_win *w) {
 		return 0;
 	}
 	if (w->state == WSTATE_UNMAPPING || w->state == WSTATE_DESTROYING) {
-		if (ps->root_desktop_switch_direction)
+		if (ps->root_desktop_switch_direction && !w->animation_ignore &&
+		    ps->o.wintype_option[w->window_type].animation != OPEN_WINDOW_ANIMATION_NONE)
 			return w->opacity;
 
 		return 0;
@@ -1472,6 +1503,13 @@ void win_update_opacity_rule(session_t *ps, struct managed_win *w) {
  */
 void win_on_factor_change(session_t *ps, struct managed_win *w) {
 	log_debug("Window %#010x (%s) factor change", w->base.id, w->name);
+	bool was_animation_ignored = w->animation_ignore;
+	w->animation_ignore = c2_match(ps, w, ps->o.animation_blacklist, NULL);
+	if (w->animation_ignore && !was_animation_ignored && win_is_real_visible(w)) {
+		// WM_CLASS/role can arrive after the first geometry update. Snap an
+		// already-started zoom instead of leaving the preview scaled to zero.
+		win_snap_animation(ps, w);
+	}
 	// Focus needs to be updated first, as other rules might depend on the focused
 	// state of the window
 	win_update_focused(ps, w);
@@ -2647,7 +2685,8 @@ void unmap_win_start(session_t *ps, struct managed_win *w) {
 	w->opacity_target_old = fmax(w->opacity_target, w->opacity_target_old);
 	w->opacity_target = win_calc_opacity_target(ps, w);
 
-	if (ps->o.animations && ps->o.animation_for_unmap_window != OPEN_WINDOW_ANIMATION_NONE &&
+	if (ps->o.animations && !w->animation_ignore &&
+	    ps->o.animation_for_unmap_window != OPEN_WINDOW_ANIMATION_NONE &&
 	    ps->o.wintype_option[w->window_type].animation != 0) {
 		init_animation_unmap(ps, w);
 
