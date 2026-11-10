@@ -444,6 +444,7 @@ bool default_set_image_property(backend_t *base attr_unused, enum image_properti
 	case IMAGE_PROPERTY_INVERTED: tex->color_inverted = bargs[0]; break;
 	case IMAGE_PROPERTY_DIM_LEVEL: tex->dim = dargs[0]; break;
 	case IMAGE_PROPERTY_OPACITY: tex->opacity = dargs[0]; break;
+	case IMAGE_PROPERTY_FULL_COLOR_OPACITY: tex->full_color_opacity = bargs[0]; break;
 	case IMAGE_PROPERTY_EFFECTIVE_SIZE:
 		// texture is already set to repeat, so nothing else we need to do
 		tex->ewidth = iargs[0];

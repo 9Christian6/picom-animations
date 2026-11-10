@@ -30,6 +30,7 @@ static inline GLint glGetUniformLocationChecked(GLuint p, const char *name) {
 typedef struct {
 	GLuint prog;
 	GLint uniform_opacity;
+	GLint uniform_full_color_opacity;
 	GLint uniform_invert_color;
 	GLint uniform_tex;
 	GLint uniform_dim;

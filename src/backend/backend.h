@@ -56,6 +56,8 @@ enum image_properties {
 	// Image opacity, i.e. an alpha value multiplied to the alpha channel
 	// 1 double, default: 1
 	IMAGE_PROPERTY_OPACITY,
+	// Apply opacity to all colors, bypassing the custom white-only filter.
+	IMAGE_PROPERTY_FULL_COLOR_OPACITY,
 	// The effective size of the image, the image will be tiled to fit.
 	// 2 int, default: the actual size of the image
 	IMAGE_PROPERTY_EFFECTIVE_SIZE,

@@ -405,6 +405,10 @@ void paint_all_new(session_t *ps, struct managed_win *t, bool ignore_damage) {
 
 		// Update image properties
 		{
+			bool full_color_opacity = w->window_type == WINTYPE_NOTIFICATION;
+			ps->backend_data->ops->set_image_property(
+			    ps->backend_data, IMAGE_PROPERTY_FULL_COLOR_OPACITY, w->win_image,
+			    &full_color_opacity);
 			double dim_opacity = 0.0;
 			if (w->dim) {
 				dim_opacity = ps->o.inactive_dim;

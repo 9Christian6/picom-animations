@@ -373,6 +373,9 @@ static void _gl_compose(backend_t *base, struct backend_image *img, GLuint targe
 
 	assert(gd->win_shader.prog);
 	glUseProgram(gd->win_shader.prog);
+	if (gd->win_shader.uniform_full_color_opacity >= 0) {
+		glUniform1i(gd->win_shader.uniform_full_color_opacity, img->full_color_opacity);
+	}
 	if (gd->win_shader.uniform_opacity >= 0) {
 		glUniform1f(gd->win_shader.uniform_opacity, (float)img->opacity);
 	}
@@ -914,6 +917,7 @@ static int gl_win_shader_from_string(const char *vshader_str, const char *fshade
 
 	// Get uniform addresses
 	bind_uniform(ret, opacity);
+	bind_uniform(ret, full_color_opacity);
 	bind_uniform(ret, invert_color);
 	bind_uniform(ret, tex);
 	bind_uniform(ret, dim);
@@ -1555,6 +1559,7 @@ void gl_get_blur_size(void *blur_context, int *width, int *height) {
 // clang-format off
 const char *win_shader_glsl = GLSL(330,
 	uniform float opacity;
+	uniform bool full_color_opacity;
 	uniform float dim;
 	uniform float corner_radius;
 	uniform float border_width;
@@ -1586,8 +1591,8 @@ const char *win_shader_glsl = GLSL(330,
 			c = vec4(c.aaa - c.rgb, c.a);
 			border_color = vec4(border_color.aaa - border_color.rgb, border_color.a);
 		}
-		float c_opacity = is_pure_white(c) ? opacity : 1.0;
-		float border_opacity = is_pure_white(border_color) ? opacity : 1.0;
+		float c_opacity = (full_color_opacity || is_pure_white(c)) ? opacity : 1.0;
+		float border_opacity = (full_color_opacity || is_pure_white(border_color)) ? opacity : 1.0;
 		c = vec4(c.rgb * (1.0 - dim), c.a) * c_opacity;
 		border_color = vec4(border_color.rgb * (1.0 - dim), border_color.a) * border_opacity;
 

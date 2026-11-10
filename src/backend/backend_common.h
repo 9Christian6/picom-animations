@@ -35,6 +35,7 @@ struct backend_image {
 	// Backend dependent inner image data
 	struct backend_image_inner_base *inner;
 	double opacity;
+	bool full_color_opacity;
 	double dim;
 	double max_brightness;
 	double corner_radius;
