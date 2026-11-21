@@ -506,15 +506,31 @@ static bool initialize_backend(session_t *ps) {
 			return false;
 		}
 
-		// window_stack shouldn't include window that's
-		// not in the hash table at this point. Since
-		// there cannot be any fading windows.
+		// The backend may be reinitialized while a window transition is in
+		// progress (for example, when the screen configuration changes during
+		// a workspace animation).  destroy_backend() normally finishes fades,
+		// but windows can still be in a transitional state here because this
+		// loop walks the window hash table rather than the paint stack.
+		//
+		// Do not assume that every managed window is MAPPED or UNMAPPED.  In
+		// particular, asserting that invariant makes a harmless root change
+		// crash picom.  Visible transitional windows still need their images
+		// reacquired; windows that are being unmapped or destroyed must not
+		// reacquire a pixmap.
 		HASH_ITER2(ps->windows, _w) {
 			if (!_w->managed) {
 				continue;
 			}
 			auto w = (struct managed_win *)_w;
-			assert(w->state == WSTATE_MAPPED || w->state == WSTATE_UNMAPPED);
+			if (w->state == WSTATE_UNMAPPING || w->state == WSTATE_DESTROYING ||
+			    w->state == WSTATE_UNMAPPED) {
+				continue;
+			}
+			if (w->state != WSTATE_MAPPED) {
+				log_debug("Reinitializing backend while window %#010x (%s) is "
+				          "in transition state %d",
+				          w->base.id, w->name, w->state);
+			}
 			// We need to reacquire image
 			log_debug("Marking window %#010x (%s) for update after "
 			          "redirection",
